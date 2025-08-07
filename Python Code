@@ -1,0 +1,69 @@
+import mysql.connector
+conn_obj=mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="R@jdeep123",
+    database="may_python_day_1_login")
+cur_obj=conn_obj.cursor()
+
+#Define function data_entry_sql
+def data_entry_sql(full_name,address,ph_no,user_id,password):
+    sql = "INSERT INTO basic_details (full_name, address, ph_no, user_id, password) VALUES (%s, %s, %s, %s, %s)"
+    data = (full_name,address,ph_no,user_id,password)
+
+    try:
+        cur_obj.execute(sql, data)
+        print("Your regustration has been completed, try login now....")
+        conn_obj.commit()
+    except mysql.connector.Error as e:
+        print("Error entering data from MySQL:", e)
+        conn_obj.rollback()
+
+#Define function data_retrieve
+def data_retrieve(user_id):
+    query = f"select * from basic_details WHERE user_id=\'{user_id}\'"
+    try:
+        cur_obj.execute(query)
+        result = cur_obj.fetchone()
+        conn_obj.commit()
+    except mysql.connector.Error as e:
+        print("Error retrieving data from MySQL:", e)
+        conn_obj.rollback()
+    return result
+def user_registration():
+    full_name=input("Please enter your full name->")
+    address = input("Please enter your address->")
+    ph_no = input("Please enter your ph_no->")
+    while True:
+        user_id = input("Please set your user id->")
+        result_from_db=data_retrieve(user_id)
+        if result_from_db:
+            print("user_id already taken, set different userid")
+        else:
+            password = input("Please set your password->")
+            data_entry_sql(full_name,address,ph_no,user_id,password)
+            break
+#main code/logic
+print("Welcome to Logic authentication using mysql->")
+res=input("1. New user registration\n2. Login\nChose the option from below->")
+if res=='1':
+    #1. New user registration
+    user_registration()
+elif res=='2':
+    #2.Login
+    user_id = input("Please set your user id->")
+    password = input("Please set your password->")
+    cust_details_from_db=data_retrieve(user_id)
+    #print(cust_details_from_db[-1])
+    if cust_details_from_db:
+        if password==cust_details_from_db[-1]:
+            print("Access Granted")
+        else:
+            print("Access denied, try again with correct user_id and password")
+    else:
+        print("Userid does not exist, pls register yourself")
+        user_registration()
+else:
+    print("Invalid response, please chose from above options..")
+
+conn_obj.close()
