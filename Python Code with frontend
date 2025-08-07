@@ -1,0 +1,122 @@
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import ttk
+import mysql.connector
+
+# Database Connection
+conn_obj = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="R@jdeep123",
+    database="may_python_day_1_login"
+)
+cur_obj = conn_obj.cursor()
+
+# Insert Function
+def data_entry_sql(full_name, address, ph_no, user_id, password):
+    sql = "INSERT INTO basic_details (full_name, address, ph_no, user_id, password) VALUES (%s, %s, %s, %s, %s)"
+    data = (full_name, address, ph_no, user_id, password)
+    try:
+        cur_obj.execute(sql, data)
+        conn_obj.commit()
+        messagebox.showinfo("Success", "Registration successful. You can now login.")
+    except mysql.connector.Error as e:
+        conn_obj.rollback()
+        messagebox.showerror("Database Error", str(e))
+
+# Retrieve Function
+def data_retrieve(user_id):
+    query = f"SELECT * FROM basic_details WHERE user_id = %s"
+    try:
+        cur_obj.execute(query, (user_id,))
+        return cur_obj.fetchone()
+    except mysql.connector.Error as e:
+        conn_obj.rollback()
+        messagebox.showerror("Database Error", str(e))
+        return None
+
+# Registration Window
+def open_registration():
+    def submit_registration():
+        full_name = entry_fullname.get()
+        address = entry_address.get()
+        ph_no = entry_phno.get()
+        user_id = entry_userid.get()
+        password = entry_password.get()
+
+        if data_retrieve(user_id):
+            messagebox.showwarning("Warning", "User ID already taken. Please try a different one.")
+        else:
+            data_entry_sql(full_name, address, ph_no, user_id, password)
+            reg_window.destroy()
+
+    reg_window = tk.Toplevel(root)
+    reg_window.title("User Registration")
+    reg_window.geometry("400x400")
+    reg_window.configure(bg="#f0f0f0")
+
+    ttk.Label(reg_window, text="Full Name").pack(pady=5)
+    entry_fullname = ttk.Entry(reg_window)
+    entry_fullname.pack(pady=5)
+
+    ttk.Label(reg_window, text="Address").pack(pady=5)
+    entry_address = ttk.Entry(reg_window)
+    entry_address.pack(pady=5)
+
+    ttk.Label(reg_window, text="Phone Number").pack(pady=5)
+    entry_phno = ttk.Entry(reg_window)
+    entry_phno.pack(pady=5)
+
+    ttk.Label(reg_window, text="User ID").pack(pady=5)
+    entry_userid = ttk.Entry(reg_window)
+    entry_userid.pack(pady=5)
+
+    ttk.Label(reg_window, text="Password").pack(pady=5)
+    entry_password = ttk.Entry(reg_window, show="*")
+    entry_password.pack(pady=5)
+
+    ttk.Button(reg_window, text="Register", command=submit_registration).pack(pady=20)
+
+# Login Function
+def login():
+    user_id = entry_login_userid.get()
+    password = entry_login_password.get()
+    user_data = data_retrieve(user_id)
+
+    if user_data:
+        if password == user_data[-1]:
+            messagebox.showinfo("Login Success", f"Welcome {user_data[1]}!")
+        else:
+            messagebox.showerror("Login Failed", "Incorrect password.")
+    else:
+        messagebox.showerror("Login Failed", "User ID not found. Please register.")
+
+# Main Window
+root = tk.Tk()
+root.title("User Authentication System")
+root.geometry("400x300")
+root.configure(bg="#e6f2ff")
+
+style = ttk.Style()
+style.theme_use('clam')
+style.configure('TButton', font=('Helvetica', 10), padding=6)
+style.configure('TLabel', font=('Helvetica', 10))
+
+frame = ttk.Frame(root, padding=20)
+frame.pack(expand=True)
+
+ttk.Label(frame, text="User ID:").grid(row=0, column=0, sticky="e", pady=5)
+entry_login_userid = ttk.Entry(frame)
+entry_login_userid.grid(row=0, column=1, pady=5)
+
+ttk.Label(frame, text="Password:").grid(row=1, column=0, sticky="e", pady=5)
+entry_login_password = ttk.Entry(frame, show="*")
+entry_login_password.grid(row=1, column=1, pady=5)
+
+ttk.Button(frame, text="Login", command=login).grid(row=2, column=1, pady=10, sticky="e")
+ttk.Button(frame, text="New User? Register Here", command=open_registration).grid(row=3, column=1, pady=10, sticky="e")
+
+root.mainloop()
+
+# Close connection at the end
+conn_obj.close()
